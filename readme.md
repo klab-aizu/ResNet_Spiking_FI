@@ -7,7 +7,7 @@ To run the code without any issues, we installed the same conda environment as S
 ## Environment Setup
 
 ```bash
-conda env create --name <your-env-name> python=3.9
+conda create --name <your-env-name> python=3.9
 conda activate <your-env-name>
 conda install gcc_linux-64
 conda install gxx_linux-64

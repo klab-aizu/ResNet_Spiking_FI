@@ -82,7 +82,11 @@ def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch, pri
     metric_logger.synchronize_between_processes()
     return metric_logger.loss.global_avg, metric_logger.acc1.global_avg, metric_logger.acc5.global_avg
 
-def flip_bits(number, bit_length=64, start_bit=0, end_bit=63):
+def shift_and_return(number, bit_length):
+    number = int(float(number) * (2**(bit_length-1))) / (2**(bit_length-1))
+    return number
+
+def flip_bits(number, bit_length=32, start_bit=16, end_bit=31):
     number = int(float(number) * (2**(bit_length-1)))
     binary_tmp = str(np.binary_repr(number, width=bit_length))
     # print(binary_tmp)
@@ -110,7 +114,7 @@ def stuck_bits(number, bit_length=64, start_bit=0, end_bit=63, stuck='1'):
 
 def insert_faults(modified_data, ftype, frate):
     weight_size = list(modified_data.size())
-    # print(weight_size)
+    print(weight_size)
     n_indexes = len(weight_size)
     n_elem = torch.numel(modified_data)
     n_faults = int(n_elem*frate)
@@ -143,15 +147,52 @@ def insert_faults(modified_data, ftype, frate):
     # print(n_elem)
     return 0
 
+def float_to_fix_point(modified_data, fixed_bits=32):
+    weight_size = list(modified_data.size())
+    dimension = len(modified_data.size())
+    print(dimension)
+    if dimension > 0:
+        print(weight_size[0])
+    if dimension > 1:
+        print(weight_size[1])
+    if dimension > 2:
+        print(weight_size[2])
+    if dimension > 3:
+        print(weight_size[3])
+
+    # print(modified_data[0])
+    for d1 in range(weight_size[0]):
+        if dimension > 1:
+            for d2 in range(weight_size[1]):
+                if dimension > 2:
+                    for d3 in range(weight_size[2]):
+                        if dimension > 3:
+                            for d4 in range(weight_size[3]):
+                                modified_data[d1,d2,d3,d4] = shift_and_return(modified_data[d1,d2,d3,d4], fixed_bits)
+                        else:
+                            modified_data[d1,d2,d3] = shift_and_return(modified_data[d1,d2,d3], fixed_bits)
+                else:
+                    modified_data[d1,d2] = shift_and_return(modified_data[d1,d2], fixed_bits)
+        else:
+            modified_data[d1] = shift_and_return(modified_data[d1], fixed_bits)
+                        
+
+    # print(modified_data[0])
+    return modified_data
+
 def insert_fault_to_model(model, ftype='flip-bit', layer="layer1", frate=0.001, to_weight=True, to_bias=True, all_layer=True):
     new_model = model
     for param_tensor in new_model.state_dict():
         if all_layer==True:
             if ("weight" in param_tensor and to_weight==True):
+                new_model.state_dict()[param_tensor].data = float_to_fix_point(new_model.state_dict()[param_tensor].data)
                 insert_faults(new_model.state_dict()[param_tensor].data, ftype, frate)
+                insert_faults(new_model.state_dict()[param_tensor].data, ftype, frate) # for approximate adder
                 print('\n Inserted {} faults with a rate of {} to {}'.format(ftype, frate, param_tensor))
             if ("bias" in param_tensor and to_bias==True):
+                new_model.state_dict()[param_tensor].data = float_to_fix_point(new_model.state_dict()[param_tensor].data)
                 insert_faults(new_model.state_dict()[param_tensor].data, ftype, frate)
+                insert_faults(new_model.state_dict()[param_tensor].data, ftype, frate) # for approximate adder
                 print('\n Inserted {} faults with a rate of {} to {}'.format(ftype, frate, param_tensor))
         else:
             if layer in param_tensor:

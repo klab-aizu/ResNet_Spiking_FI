@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 from spikingjelly.clock_driven import layer
 from spikingjelly.cext import neuron as cext_neuron
-import pyximport; pyximport.install()
-import add16u_1A5
 
 __all__ = ['SpikingResNet', 'spiking_resnet18', 'spiking_resnet34', 'spiking_resnet50', 'spiking_resnet101',
            'spiking_resnet152']

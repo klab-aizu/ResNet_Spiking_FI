@@ -47,9 +47,11 @@ class BasicBlock(nn.Module):
     def forward(self, x):
         identity = x
 
-        out = self.sn1(self.conv1(x))
-
-        out = self.sn2(self.conv2(out))
+        out = self.conv1(x)
+        out = self.sn1(out)# + (torch.randint(0, 2, out.size(), dtype=torch.float32).to('cuda:0') * 2 - 1) * 0.1)
+        
+        out = self.conv2(out)
+        out = self.sn2(out)# + (torch.randint(0, 2, out.size(), dtype=torch.float32).to('cuda:0') * 2 - 1) * 0.1)
 
         if self.downsample is not None:
             identity = self.downsample(x)
@@ -208,18 +210,25 @@ class SEWResNet(nn.Module):
 
     def _forward_impl(self, x):
         x = self.conv1(x)
+        # x += (torch.randint(0, 2, x.size(), dtype=torch.float32).to('cuda:0') * 2 - 1) * 0.1
         x = self.bn1(x)
         x.unsqueeze_(0)
         x = x.repeat(self.T, 1, 1, 1, 1)
         x = self.sn1(x)
         x = self.maxpool(x)
-        x = self.layer1(x)
+
+        x = self.layer1(x)        
+        # x += (torch.randint(0, 2, x.size(), dtype=torch.float32).to('cuda:0') * 2 - 1) * (x.max() * 0.01)
         x = self.layer2(x)
+        # x += (torch.randint(0, 2, x.size(), dtype=torch.float32).to('cuda:0') * 2 - 1) * (x.max() * 0.01)
         x = self.layer3(x)
+        # x += (torch.randint(0, 2, x.size(), dtype=torch.float32).to('cuda:0') * 2 - 1) * (x.max() * 0.01)
         x = self.layer4(x)
+        # x += (torch.randint(0, 2, x.size(), dtype=torch.float32).to('cuda:0') * 2 - 1) * (x.max() * 0.01)
 
         x = self.avgpool(x)
         x = torch.flatten(x, 2)
+        # x += (torch.randint(0, 2, x.size(), dtype=torch.float32).to('cuda:0') * 2 - 1) * (x.max() * 0.01)
         return self.fc(x.mean(dim=0))
 
     def forward(self, x):

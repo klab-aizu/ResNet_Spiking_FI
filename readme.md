@@ -95,7 +95,5 @@ The code supports 4 type of faults (--ftype): **flip-bit**, **stuck-at-zero**, *
 
 Change the fault rate with **frate**.
 
-### Test-only with Approximate Adders.
 
-TBD.
 
